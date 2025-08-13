@@ -1,61 +1,119 @@
-CountAPI is a **free, public web service** that gives you simple key-value counters you can increment, decrement, read, or set via HTTP requests — no server or database needed on your side.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Site Visits</title>
+  <style>
+    :root{
+      --bg:#0b132b;          /* dark blue background */
+      --bg2:#1c2541;         /* deeper panel blue */
+      --accent:#3a86ff;      /* electric blue */
+      --text:#eaf6ff;        /* soft white */
+      --glow: rgba(58,134,255,.65);
+    }
 
-It’s popular for static sites (like GitHub Pages) because it works entirely in the browser, yet persists values for everyone worldwide.
+    html,body{height:100%}
+    body{
+      margin:0; display:grid; place-items:center; height:100%;
+      background: radial-gradient(1200px 800px at 50% 30%, var(--bg2), var(--bg));
+      color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
 
----
+    .card{
+      background: linear-gradient(180deg, rgba(28,37,65,.9), rgba(11,19,43,.9));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      padding: 28px 36px; text-align:center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 40px var(--glow) inset;
+      backdrop-filter: blur(6px);
+      min-width: min(90vw, 560px);
+    }
 
-## 🔹 How it works
+    h1{margin:0 0 6px; letter-spacing:.06em; font-weight:800; text-transform:uppercase}
+    .sub{opacity:.8; font-size:.95rem; margin-bottom:18px}
 
-* **Every counter is identified by two strings**:
+    .digits{
+      display:inline-block;
+      font-variant-numeric: tabular-nums;
+      font-weight:900;
+      letter-spacing:.08em;
+      font-size: clamp(52px, 9vw, 120px);
+      color: var(--accent);
+      text-shadow: 0 0 12px var(--glow), 0 0 38px var(--glow);
+      user-select:none;
+    }
 
-  * `namespace` – like your project name or GitHub repo (keeps your keys separate from other users)
-  * `key` – like `"homepage"` or `"about-page"` (identifies a specific counter within the namespace)
-* You hit their API endpoint with those identifiers, and CountAPI stores and updates the number for you.
-* Counters are **persistent** on CountAPI’s servers — they increase for everyone, not just the current user.
+    .status{margin-top:10px; font-size:.9rem; opacity:.8}
+    .hidden{display:none}
 
----
+    .footer{position:fixed; bottom:10px; left:0; right:0; text-align:center; opacity:.6; font-size:.85rem}
+    a{color:#9ecbff}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Visitors</h1>
+    <div class="sub">Global hit counter that <strong>starts at 200</strong> and increases for every visit.</div>
+    <div id="counter" class="digits">—</div>
+    <div id="status" class="status"></div>
+    <noscript><div class="status">Enable JavaScript to see the counter.</div></noscript>
+  </main>
 
-## 🔹 Common operations
+  <div class="footer">Hosted on GitHub Pages • Backed by CountAPI</div>
 
-| Action                | Example URL                                                         | Result                                                                                |
-| --------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **Create** (optional) | `https://api.countapi.xyz/create?namespace=demo&key=test&value=200` | Creates counter `demo/test` starting at `200`. If it exists, creation can be skipped. |
-| **Increment**         | `https://api.countapi.xyz/hit/demo/test`                            | Increases the number by `1` and returns the new value.                                |
-| **Read** (no change)  | `https://api.countapi.xyz/get/demo/test`                            | Returns the current value without incrementing.                                       |
-| **Set**               | `https://api.countapi.xyz/set/demo/test?value=500`                  | Sets the counter to `500`.                                                            |
+  <script>
+    // === Simple persistent counter using CountAPI ===
+    // Works perfectly on GitHub Pages because it calls a public API from the browser.
+    // 1) Pick a unique namespace (e.g., your GitHub username or repo path)
+    // 2) Pick a unique key (e.g., 'homepage')
+    // 3) We create the counter with value 200 if it doesn't exist, then increment it.
 
----
+    const NAMESPACE = 'your-github-username-or-repo'; // <- change me
+    const KEY = 'homepage';                            // <- change me if you want multiple counters
+    const START_VALUE = 200;                           // required starting number
 
-## 🔹 Response format
+    const $digits = document.getElementById('counter');
+    const $status = document.getElementById('status');
 
-All responses are JSON. Example increment:
+    function render(n){
+      $digits.textContent = n.toLocaleString();
+    }
 
-```json
-{
-  "namespace": "demo",
-  "key": "test",
-  "value": 201
-}
-```
+    async function ensureExists(){
+      // Create the counter if missing. If it already exists, create is a no-op for our flow.
+      const url = `https://api.countapi.xyz/create?namespace=${encodeURIComponent(NAMESPACE)}&key=${encodeURIComponent(KEY)}&value=${START_VALUE}`;
+      try {
+        $status.textContent = 'initializing…';
+        const res = await fetch(url, { method: 'GET' });
+        if(!res.ok) throw new Error('create failed');
+        await res.json();
+      } catch (e) {
+        // Even if create fails (e.g., rate limit), we still attempt to hit next.
+      }
+    }
 
-Here `value` is the **current** counter after the operation.
+    async function hit(){
+      const url = `https://api.countapi.xyz/hit/${encodeURIComponent(NAMESPACE)}/${encodeURIComponent(KEY)}`;
+      const res = await fetch(url, { method: 'GET' });
+      if(!res.ok) throw new Error('hit failed');
+      const data = await res.json();
+      // data.value is the updated total after increment
+      return data.value;
+    }
 
----
-
-## 🔹 Why it’s useful for GitHub Pages
-
-GitHub Pages is **static hosting** — no backend code runs there.
-Normally, to store and update a visitor counter you’d need a server. CountAPI acts as that backend for you, and you can call it directly from JavaScript in the browser.
-
----
-
-## 🔹 Things to know
-
-* **Public:** Anyone who knows your namespace/key can change the number — so don’t use it for anything sensitive.
-* **Limits:** It’s free, but there’s a rate limit (usually \~1 request/sec per counter and an overall daily cap). Fine for small/medium personal sites.
-* **Persistence:** Data is stored by CountAPI indefinitely, but it’s not a formal guarantee — use a private database for mission-critical counters.
-* **Security:** No authentication — namespace/key is your “password.” Obscure names help avoid tampering.
-
----
-
-If you want, I can give you a **minimal GitHub Pages counter example** that uses CountAPI starting at `200` — just copy-paste, publish, and it’ll work for everyone. Would you like me to do that?
+    (async function
+    init(){
+      try {
+        await ensureExists();
+        const total = await hit();
+        render(total);
+        $status.textContent = 'live';
+      } catch (err) {
+        $status.textContent = 'counter unavailable right now';
+        console.error(err);
+      }
+    })();
+  </script>
+</body>
+</html>
