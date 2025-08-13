@@ -1,0 +1,61 @@
+CountAPI is a **free, public web service** that gives you simple key-value counters you can increment, decrement, read, or set via HTTP requests — no server or database needed on your side.
+
+It’s popular for static sites (like GitHub Pages) because it works entirely in the browser, yet persists values for everyone worldwide.
+
+---
+
+## 🔹 How it works
+
+* **Every counter is identified by two strings**:
+
+  * `namespace` – like your project name or GitHub repo (keeps your keys separate from other users)
+  * `key` – like `"homepage"` or `"about-page"` (identifies a specific counter within the namespace)
+* You hit their API endpoint with those identifiers, and CountAPI stores and updates the number for you.
+* Counters are **persistent** on CountAPI’s servers — they increase for everyone, not just the current user.
+
+---
+
+## 🔹 Common operations
+
+| Action                | Example URL                                                         | Result                                                                                |
+| --------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Create** (optional) | `https://api.countapi.xyz/create?namespace=demo&key=test&value=200` | Creates counter `demo/test` starting at `200`. If it exists, creation can be skipped. |
+| **Increment**         | `https://api.countapi.xyz/hit/demo/test`                            | Increases the number by `1` and returns the new value.                                |
+| **Read** (no change)  | `https://api.countapi.xyz/get/demo/test`                            | Returns the current value without incrementing.                                       |
+| **Set**               | `https://api.countapi.xyz/set/demo/test?value=500`                  | Sets the counter to `500`.                                                            |
+
+---
+
+## 🔹 Response format
+
+All responses are JSON. Example increment:
+
+```json
+{
+  "namespace": "demo",
+  "key": "test",
+  "value": 201
+}
+```
+
+Here `value` is the **current** counter after the operation.
+
+---
+
+## 🔹 Why it’s useful for GitHub Pages
+
+GitHub Pages is **static hosting** — no backend code runs there.
+Normally, to store and update a visitor counter you’d need a server. CountAPI acts as that backend for you, and you can call it directly from JavaScript in the browser.
+
+---
+
+## 🔹 Things to know
+
+* **Public:** Anyone who knows your namespace/key can change the number — so don’t use it for anything sensitive.
+* **Limits:** It’s free, but there’s a rate limit (usually \~1 request/sec per counter and an overall daily cap). Fine for small/medium personal sites.
+* **Persistence:** Data is stored by CountAPI indefinitely, but it’s not a formal guarantee — use a private database for mission-critical counters.
+* **Security:** No authentication — namespace/key is your “password.” Obscure names help avoid tampering.
+
+---
+
+If you want, I can give you a **minimal GitHub Pages counter example** that uses CountAPI starting at `200` — just copy-paste, publish, and it’ll work for everyone. Would you like me to do that?
